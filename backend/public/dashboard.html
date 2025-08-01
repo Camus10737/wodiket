@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Sales Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { padding: 10px; border-radius: 4px; text-align: center; margin: 10px 0; }
+        .status.connected { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.disconnected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .qr-container { text-align: center; }
+        .qr-code { max-width: 300px; margin: 20px auto; }
+        .messages { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
+        .message { padding: 10px; margin: 5px 0; background: #f8f9fa; border-radius: 4px; }
+        .send-form { display: flex; gap: 10px; margin: 20px 0; }
+        .send-form input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .send-form button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .send-form button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #666; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 WhatsApp Sales Dashboard</h1>
+        
+        <div class="card">
+            <h2>📱 Statut WhatsApp</h2>
+            <div id="status" class="status disconnected">🔄 Initialisation...</div>
+            
+            <div id="qr-container" class="qr-container hidden">
+                <h3>Scanner ce QR Code avec WhatsApp</h3>
+                <p>Ouvrez WhatsApp > Menu (3 points) > Appareils liés > Lier un appareil</p>
+                <img id="qr-code" class="qr-code" src="" alt="QR Code">
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>💬 Envoyer un message</h2>
+            <div class="send-form">
+                <input type="text" id="phone-number" placeholder="Numéro de téléphone (ex: 22465123456)" />
+                <input type="text" id="message-text" placeholder="Votre message" />
+                <button onclick="sendMessage()">Envoyer</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📨 Messages reçus</h2>
+            <div id="messages" class="messages">
+                <p>Aucun message pour le moment...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        
+        // Éléments DOM
+        const statusEl = document.getElementById('status');
+        const qrContainer = document.getElementById('qr-container');
+        const qrCodeEl = document.getElementById('qr-code');
+        const messagesEl = document.getElementById('messages');
+        
+        // Gestion des événements Socket.IO
+        socket.on('qr', (qrData) => {
+            qrCodeEl.src = qrData;
+            qrContainer.classList.remove('hidden');
+            statusEl.textContent = '📱 Scanner le QR Code pour connecter WhatsApp';
+            statusEl.className = 'status disconnected';
+        });
+        
+        socket.on('ready', () => {
+            statusEl.textContent = '✅ WhatsApp connecté et prêt !';
+            statusEl.className = 'status connected';
+            qrContainer.classList.add('hidden');
+        });
+        
+        socket.on('authenticated', () => {
+            statusEl.textContent = '🔐 WhatsApp authentifié...';
+        });
+        
+        socket.on('disconnected', (reason) => {
+            statusEl.textContent = `❌ WhatsApp déconnecté: ${reason}`;
+            statusEl.className = 'status disconnected';
+        });
+        
+        socket.on('newMessage', (messageData) => {
+            addMessage(messageData);
+        });
+        
+        // Fonction pour ajouter un message
+        function addMessage(data) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `
+                <strong>${data.from}</strong> 
+                <small>(${new Date(data.timestamp).toLocaleString()})</small><br>
+                ${data.body}
+            `;
+            messagesEl.insertBefore(messageDiv, messagesEl.firstChild);
+        }
+        
+        // Fonction pour envoyer un message
+        async function sendMessage() {
+            const phoneNumber = document.getElementById('phone-number').value;
+            const messageText = document.getElementById('message-text').value;
+            
+            if (!phoneNumber || !messageText) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        number: phoneNumber,
+                        message: messageText
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Message envoyé avec succès !');
+                    document.getElementById('message-text').value = '';
+                } else {
+                    alert('Erreur: ' + result.error);
+                }
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        }
+        
+        // Permettre l'envoi avec Entrée
+        document.getElementById('message-text').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

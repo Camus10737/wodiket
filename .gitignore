@@ -1,0 +1,5 @@
+node_modules/
+.env
+whatsapp-data/
+# Ignorer les fichiers de session WhatsApp Web
+backend/.wwebjs_auth/
