@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!-- <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -470,19 +470,14 @@
             document.getElementById('current-time').innerHTML = `⏰ ${timeStr}`;
         }
 
-        // Chargement des données RÉELLES
+        // Chargement des données
         async function chargerDonnees() {
             try {
                 showNotification('🔄 Actualisation des données...', 1000);
                 
-                // Vraies APIs au lieu de simulation
-                const [statsResponse, commandesResponse] = await Promise.all([
-                    fetch('/api/stats'),
-                    fetch('/api/commandes')
-                ]);
-                
-                const stats = await statsResponse.json();
-                const commandes = await commandesResponse.json();
+                // Simuler appel API (remplacer par vraies APIs)
+                const stats = await simulerStats();
+                const commandes = await simulerCommandes();
                 
                 currentData.stats = stats;
                 currentData.commandes = commandes;
@@ -491,17 +486,11 @@
                 afficherStats(stats);
                 afficherCommandes(commandes);
                 
-                console.log('✅ Données réelles chargées:', { stats, commandes });
+                console.log('✅ Données chargées:', { stats, commandes });
                 
             } catch (error) {
                 console.error('❌ Erreur chargement:', error);
                 showNotification('❌ Erreur de connexion', 3000);
-                
-                // Fallback vers simulation en cas d'erreur
-                const stats = await simulerStats();
-                const commandes = await simulerCommandes();
-                afficherStats(stats);
-                afficherCommandes(commandes);
             }
         }
 
@@ -621,35 +610,27 @@
             return `Il y a ${Math.floor(diff / 1440)} jour(s)`;
         }
 
-        // Actions RÉELLES
+        // Actions
         async function marquerVendu(commandeId) {
             if (!confirm('Le client a bien payé ?')) return;
             
             try {
                 showNotification('⏳ Traitement...', 2000);
                 
-                // Vraie API au lieu de simulation
-                const response = await fetch(`/api/commandes/${commandeId}/vendu`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // Simuler API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                if (!response.ok) {
-                    throw new Error('Erreur serveur');
-                }
-                
-                const result = await response.json();
-                
-                // Retirer de la liste locale
+                // Retirer de la liste
                 currentData.commandes = currentData.commandes.filter(c => c.id !== commandeId);
                 afficherCommandes(currentData.commandes);
                 
-                // Recharger les stats
-                chargerDonnees();
+                // Mettre à jour stats
+                currentData.stats.commandes_attente = Math.max(0, currentData.stats.commandes_attente - 1);
+                currentData.stats.ca_jour += 75000; // Ajouter vente
+                currentData.stats.ventes_jour += 1;
+                afficherStats(currentData.stats);
                 
-                showNotification(`✅ Commande ${commandeId} validée !`, 3000);
+                showNotification('✅ Commande validée !', 3000);
                 
             } catch (error) {
                 console.error('Erreur validation:', error);
@@ -703,4 +684,4 @@
         }
     </script>
 </body>
-</html>
+</html> -->   -->
